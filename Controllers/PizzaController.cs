@@ -1,5 +1,7 @@
 ﻿using la_mia_pizzeria_static.Models;
+using la_mia_pizzeria_static.MyDbContext;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
 
 namespace la_mia_pizzeria_static.Controllers
@@ -13,34 +15,73 @@ namespace la_mia_pizzeria_static.Controllers
             _logger = logger;
         }
 
+        private void PizzaSeeder()
+        {
+            using (Pizzeria pizzeria_db = new Pizzeria())
+            {
+                PizzaModel newPizza = new PizzaModel("Margherita", "La classica pizza napoletana", "pizza-margherita.jfif", 5.99F);
+                pizzeria_db.Add(newPizza);
+                pizzeria_db.SaveChanges();
+                
+                newPizza = new PizzaModel("Capricciosa", "La pizza capricciosa è una pizza tipica della cucina italiana caratterizzata da un condimento di pomodoro, mozzarella, prosciutto cotto, funghi, olive verdi e nere, e carciofini", "pizza-capricciosa.jfif", 7.99F);
+                pizzeria_db.Add(newPizza);
+                pizzeria_db.SaveChanges();
+
+                newPizza = new PizzaModel("Salame Piccante", "Pizza base margherita con aggiunta di salame piccante", "pizza-salame.jfif", 6.99F);
+                pizzeria_db.Add(newPizza);
+                pizzeria_db.SaveChanges();
+            }
+        }
+
+        private void Store(PizzaModel pizza)
+        {
+            using (Pizzeria pizzeria_db = new Pizzeria())
+            {
+                pizzeria_db.Add(pizza);
+                pizzeria_db.SaveChanges();
+            }
+        }
+
         public IActionResult Index()
         {
-            List<Pizza> pizzaList = new List<Pizza>();
-
-            Pizza firstPizza = new Pizza("Margherita", "La classica pizza napoletana", "pizza-margherita.jfif", 5.99);
-            Pizza secondPizza = new Pizza("Capricciosa", "La pizza capricciosa è una pizza tipica della cucina italiana caratterizzata da un condimento di pomodoro, mozzarella, prosciutto cotto, funghi, olive verdi e nere, e carciofini", "pizza-capricciosa.jfif", 7.99);
-            Pizza thirdPizza = new Pizza("Salame Piccante", "Pizza base margherita con aggiunta di salame piccante", "pizza-salame.jfif", 6.99);
-
-            pizzaList.Add(firstPizza);
-            pizzaList.Add(secondPizza);
-            pizzaList.Add(thirdPizza);
-
+            List<PizzaModel> pizzaList = new List<PizzaModel>();
+            using (Pizzeria pizzeria_db = new Pizzeria())
+            {
+                pizzaList = pizzeria_db.Pizzas.OrderBy(pizza => pizza.Id).ToList<PizzaModel>();
+                if(pizzaList.Count == 0)
+                {
+                    this.PizzaSeeder();
+                    pizzaList = pizzeria_db.Pizzas.OrderBy(pizza => pizza.Id).ToList<PizzaModel>();
+                }
+            }
             return View(pizzaList);
         }
 
         public IActionResult Details(int id)
         {
-            List<Pizza> pizzaList = new List<Pizza>();
+            using (Pizzeria pizzeria_db = new Pizzeria())
+            {
+                PizzaModel thisPizza = pizzeria_db.Pizzas.Find(id);
+                return View("Show", thisPizza);
+            }
+        }
 
-            Pizza firstPizza = new Pizza("Margherita", "La classica pizza napoletana", "pizza-margherita.jfif", 5.99);
-            Pizza secondPizza = new Pizza("Capricciosa", "La pizza capricciosa è una pizza tipica della cucina italiana caratterizzata da un condimento di pomodoro, mozzarella, prosciutto cotto, funghi, olive verdi e nere, e carciofini", "pizza-capricciosa.jfif", 7.99);
-            Pizza thirdPizza = new Pizza("Salame Piccante", "Pizza base margherita con aggiunta di salame piccante", "pizza-salame.jfif", 6.99);
+        [HttpGet]
+        public IActionResult Create()
+        {
+            return View();
+        }
 
-            pizzaList.Add(firstPizza);
-            pizzaList.Add(secondPizza);
-            pizzaList.Add(thirdPizza);
-
-            return View("Show", pizzaList[id]);
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Create(PizzaModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View("Create", model);
+            }
+            this.Store(new PizzaModel(model.Name, model.Description, model.Image, (float)model.Price));
+            return RedirectToAction("Index");
         }
 
         public IActionResult Privacy()
