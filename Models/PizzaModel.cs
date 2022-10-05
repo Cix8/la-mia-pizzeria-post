@@ -15,6 +15,7 @@ namespace la_mia_pizzeria_static.Models
 
         [Required(ErrorMessage = "Il campo è obbligatorio")]
         [Column(TypeName = "text")]
+        [DescriptionValidation]
         public string Description { get; set; }
 
         [Required(ErrorMessage = "Il campo è obbligatorio")]
