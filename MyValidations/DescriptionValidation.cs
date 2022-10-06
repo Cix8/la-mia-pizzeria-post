@@ -17,6 +17,12 @@ namespace la_mia_pizzeria_static.MyValidations
                     if (valueToString[i] == ' ')
                     {
                         charCounter++;
+                        int j = i + 1;
+                        while (valueToString[j] == ' ')
+                        {
+                            j++;
+                        }
+                        i = j - 1;
                     }
                 }
             }
